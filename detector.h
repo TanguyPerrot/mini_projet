@@ -8,17 +8,15 @@
 #ifndef DETECTOR_H_
 #define DETECTOR_H_
 
+void guidage(int a);
+
 void obstacle(void);
-
-void ouverture(void);
-
-void avancer(void);
 
 void reglage_angle_gauche(int n);
 
 void reglage_angle_droite(int n);
 
-void reglage_distance(void);
+void reglage_distance(int n);
 
 void stabilisateur(void);
 
