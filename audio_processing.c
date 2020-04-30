@@ -4,8 +4,6 @@
 #include <usbcfg.h>
 #include <chprintf.h>
 
-//test
-
 #include <motors.h>
 #include <audio/microphone.h>
 #include <audio_processing.h>
@@ -27,23 +25,14 @@ static float micRight_output[FFT_SIZE];
 static float micFront_output[FFT_SIZE];
 static float micBack_output[FFT_SIZE];
 
-#define MIN_VALUE_THRESHOLD	10000
+#define MIN_VALUE_THRESHOLD	10000 
 
 #define MIN_FREQ		10	//we don't analyze before this index to not use resources for nothing
 #define FREQ_FORWARD	16	//250Hz
-#define FREQ_LEFT		19	//296Hz
-#define FREQ_RIGHT		23	//359HZ
-#define FREQ_BACKWARD	26	//406Hz
 #define MAX_FREQ		30	//we don't analyze after this index to not use resources for nothing
 
 #define FREQ_FORWARD_L		(FREQ_FORWARD-1)
 #define FREQ_FORWARD_H		(FREQ_FORWARD+1)
-#define FREQ_LEFT_L			(FREQ_LEFT-1)
-#define FREQ_LEFT_H			(FREQ_LEFT+1)
-#define FREQ_RIGHT_L		(FREQ_RIGHT-1)
-#define FREQ_RIGHT_H		(FREQ_RIGHT+1)
-#define FREQ_BACKWARD_L		(FREQ_BACKWARD-1)
-#define FREQ_BACKWARD_H		(FREQ_BACKWARD+1)
 
 /*
 *	Simple function used to detect the highest value in a buffer
@@ -51,7 +40,7 @@ static float micBack_output[FFT_SIZE];
 */
 void sound_remote(float* data){
 	float max_norm = MIN_VALUE_THRESHOLD;
-	int16_t max_norm_index = -1;
+	int16_t max_norm_index = -1; 
 
 	//search for the highest peak
 	for(uint16_t i = MIN_FREQ ; i <= MAX_FREQ ; i++){
@@ -66,26 +55,11 @@ void sound_remote(float* data){
 		left_motor_set_speed(600);
 		right_motor_set_speed(600);
 	}
-	//turn left
-	else if(max_norm_index >= FREQ_LEFT_L && max_norm_index <= FREQ_LEFT_H){
-		left_motor_set_speed(-600);
-		right_motor_set_speed(600);
-	}
-	//turn right
-	else if(max_norm_index >= FREQ_RIGHT_L && max_norm_index <= FREQ_RIGHT_H){
-		left_motor_set_speed(600);
-		right_motor_set_speed(-600);
-	}
-	//go backward
-	else if(max_norm_index >= FREQ_BACKWARD_L && max_norm_index <= FREQ_BACKWARD_H){
-		left_motor_set_speed(-600);
-		right_motor_set_speed(-600);
-	}
 	else{
 		left_motor_set_speed(0);
 		right_motor_set_speed(0);
 	}
-
+	
 }
 
 /*
@@ -137,7 +111,7 @@ void processAudioData(int16_t *data, uint16_t num_samples){
 		/*	FFT proccessing
 		*
 		*	This FFT function stores the results in the input buffer given.
-		*	This is an "In Place" function.
+		*	This is an "In Place" function. 
 		*/
 
 		doFFT_optimized(FFT_SIZE, micRight_cmplx_input);
