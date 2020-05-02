@@ -18,6 +18,7 @@
 #define GAUCHE 			200  //le robot tourne à gauche
 #define DROITE 			300  //le robot tourne à droite
 #define STOP 			400  //le robot s'arrête
+#define MOTOR			600
 #define AVANT_DROITE	0    //proximity sensor avant droite
 #define DIAG_DROITE		1    //proximity sensor diagonale droite
 #define LAT_DROITE		2    //proximity sensor latéral droite
@@ -25,6 +26,7 @@
 #define DIAG_GAUCHE		6    //proximity sensor diagonal gauche
 #define AVANT_GAUCHE	7    //proximity sensor avant gauche
 #define MUR				150  //distance à laquelle il detecte un mur
+#define MUR_CDS			120	 //distance à laquelle il détecte un mur pour le cul de sac
 #define VIDE			80   //distance à laquelle il detecte du vide
 #define WAIT			200  //temps en milliseconde
 #define CINQ_DEGREE		29   //temps en ms pour tourner de 5°
@@ -47,18 +49,18 @@
 	{
 		switch(a){
 		case AVANCE:
-			left_motor_set_speed(600);
-			right_motor_set_speed(600);
+			left_motor_set_speed(MOTOR);
+			right_motor_set_speed(MOTOR);
 			break;
 
 		case GAUCHE:
-			left_motor_set_speed(-600);
-			right_motor_set_speed(600);
+			left_motor_set_speed(-MOTOR);
+			right_motor_set_speed(MOTOR);
 			break;
 
 		case DROITE:
-			left_motor_set_speed(600);
-			right_motor_set_speed(-600);
+			left_motor_set_speed(MOTOR);
+			right_motor_set_speed(-MOTOR);
 			break;
 
 		case STOP:
@@ -93,9 +95,9 @@
 
 		//ouverture à gauche et mur devant
 		if ((var0 > MUR) & (var7 > MUR) & (var5 < VIDE)){
-			reglage_angle_gauche(18*CINQ_DEGREE);
+			reglage_angle_gauche(18.5*CINQ_DEGREE);
 
-			reglage_distance(8*UN_CM);
+			reglage_distance(10*UN_CM);
 			var5 = get_prox(LAT_GAUCHE);
 			if(var5 > 90){
 				stab = NOT_OKAY;
@@ -106,9 +108,9 @@
 		}
 		//ouverture à droite et mur devant
 		else if((var0 > MUR) & (var7 > MUR) & (var2 < VIDE)){
-			reglage_angle_droite(18*CINQ_DEGREE);
+			reglage_angle_droite(18.5*CINQ_DEGREE);
 
-			reglage_distance(8*UN_CM);
+			reglage_distance(10*UN_CM);
 			var2 = get_prox(LAT_DROITE);
 			if(var2 > 90){
 				stab = NOT_OKAY;
@@ -118,7 +120,7 @@
 			}
 		}
 		// cul de sac
-		else if((var0 > MUR) & (var7 > MUR) & (var5 > MUR) & (var2 > MUR)){
+		else if((var0 > MUR_CDS) & (var7 > MUR_CDS) & (var5 > MUR_CDS) & (var2 > MUR_CDS)){
 			reglage_angle_gauche(36*CINQ_DEGREE);
 			compteur++;
 			stab = NOT_OKAY;
@@ -127,7 +129,7 @@
 			}
 		}
 		//ouverture à gauche sans mur en face
-		else if((var5 < 80) & (var0 < 80) & (var7 < 80)){
+		else if((var5 < VIDE) & (var0 < VIDE) & (var7 < VIDE)){
 			if(compteur == 0){
 				reglage_distance(3*UN_CM);
 				reglage_angle_gauche(18*CINQ_DEGREE);
@@ -140,10 +142,11 @@
 			else{
 				compteur--;
 				reglage_distance(14*UN_CM);
+				stabilisateur();
 			}
 		}
 		//ouverture à droite sans mur en face
-		else if((var2 < 80) & (var0 < 80) & (var7 < 80)){
+		else if((var2 < VIDE) & (var0 < VIDE) & (var7 < VIDE)){
 			if(compteur == 0){
 				reglage_distance(3*UN_CM);
 				reglage_angle_droite(18*CINQ_DEGREE);
@@ -156,6 +159,7 @@
 			else{
 				compteur--;
 				reglage_distance(14*UN_CM);
+				stabilisateur();
 			}
 		}
 		else{
@@ -218,12 +222,10 @@
 		int delta1_6;
 		int	delta2_5;
 
-		var0 = get_prox(AVANT_DROITE);
 		var1 = get_prox(DIAG_DROITE);
 		var2 = get_prox(LAT_DROITE);
 		var5 = get_prox(LAT_GAUCHE);
 		var6 = get_prox(DIAG_GAUCHE);
-		var7 = get_prox(AVANT_GAUCHE);
 
 		delta1_6 = var1-var6;
 		delta2_5 = var2-var5;
@@ -232,43 +234,33 @@
 
 		if(delta1_6 > DELTA1_6){
 			while(delta1_6 > DELTA1_6){
-				guidage(GAUCHE);
-				//reglage_angle_gauche(0.5*CINQ_DEGREE);
+				//guidage(GAUCHE);
+				if(delta1_6 > 30){
+					reglage_angle_gauche(0.5*CINQ_DEGREE);
+				}
+				else{
+					reglage_angle_gauche(0.2*CINQ_DEGREE);
+				}
 				var1 = get_prox(DIAG_DROITE);
 				var6 = get_prox(DIAG_GAUCHE);
 				delta1_6 = var1-var6;
 			}
-			//reglage_angle_gauche(0.5*CINQ_DEGREE);
-			/*var1 = get_prox(DIAG_DROITE);
-			var6 = get_prox(DIAG_GAUCHE);
-			delta1_6 = var1-var6;
-			while(delta1_6 > 10){
-				guidage(GAUCHE);
-				var1 = get_prox(DIAG_DROITE);
-				var6 = get_prox(DIAG_GAUCHE);
-				delta1_6 = var1-var6;
-
-			}*/
 		}
 		else if (delta1_6 < -DELTA1_6){
 			while(delta1_6 < -DELTA1_6){
-				guidage(DROITE);
-				//reglage_angle_droite(0.5*CINQ_DEGREE);
+				//guidage(DROITE);
+				if(delta1_6 < -30){
+					reglage_angle_droite(0.5*CINQ_DEGREE);
+				}
+				else{
+					reglage_angle_droite(0.2*CINQ_DEGREE);
+				}
 				var1 = get_prox(DIAG_DROITE);
 				var6 = get_prox(DIAG_GAUCHE);
 				delta1_6 = var1-var6;
 
 			}
-			//reglage_angle_droite(0.5*CINQ_DEGREE);
-			/*var1 = get_prox(DIAG_DROITE);
-			var6 = get_prox(DIAG_GAUCHE);
-			delta1_6 = var1-var6;
-			while(delta1_6 < -10){
-				guidage(DROITE);
-				var1 = get_prox(DIAG_DROITE);
-				var6 = get_prox(DIAG_GAUCHE);
-				delta1_6 = var1-var6;
-			}*/
+			reglage_angle_droite(CINQ_DEGREE);
 		}
 		else if (delta2_5 < -DELTA2_5){
 			reglage_angle_droite(10*CINQ_DEGREE);
@@ -287,7 +279,6 @@
 		}
 		else{
 			stab = OKAY;
-
 		}
 	}
 
