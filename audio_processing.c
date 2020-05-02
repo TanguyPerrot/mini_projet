@@ -28,12 +28,12 @@ static float micBack_output[FFT_SIZE];
 
 #define MIN_VALUE_THRESHOLD	10000 
 
-#define MIN_FREQ		10	//we don't analyze before this index to not use resources for nothing
-#define FREQ_FORWARD	16	//250Hz
-#define MAX_FREQ		30	//we don't analyze after this index to not use resources for nothing
+#define MIN_FREQ		20	//we don't analyze before this index to not use resources for nothing
+#define FREQ_FORWARD	35	//550Hz
+#define MAX_FREQ		50  //we don't analyze after this index to not use resources for nothing
 
 #define FREQ_FORWARD_L		(FREQ_FORWARD-3)
-#define FREQ_FORWARD_H		(FREQ_FORWARD+3) //plager de fréquence ~[200Hz-300Hz]
+#define FREQ_FORWARD_H		(FREQ_FORWARD+3) //plager de fréquence ~[500Hz-600Hz]
 
 //uncomment to send the FFTs results from the real microphones
 #define SEND_FROM_MIC
@@ -45,6 +45,11 @@ static float micBack_output[FFT_SIZE];
 *	Simple function used to detect the highest value in a buffer
 *	and to execute a motor command depending on it
 */
+#define OFF 100
+#define ON 	200
+
+int micro = OFF;
+
 void sound_remote(float* data){
 	float max_norm = MIN_VALUE_THRESHOLD;
 	int16_t max_norm_index = -1; 
@@ -60,8 +65,8 @@ void sound_remote(float* data){
 	//go forward
 	if(max_norm_index >= FREQ_FORWARD_L && max_norm_index <= FREQ_FORWARD_H){
 		//obstacle();
-		left_motor_set_speed(600);
-		right_motor_set_speed(600);
+
+		micro = ON;
 	}
 	else{
 		left_motor_set_speed(0);
@@ -204,7 +209,7 @@ static THD_FUNCTION(ProcessAudio, arg) {
  #endif  /* SEND_FROM_MIC */
 
      /* Infinite loop. */
-     while (1) {
+     while (micro == OFF) {
  #ifdef SEND_FROM_MIC
          //waits until a result must be sent to the computer
          wait_send_to_computer();
@@ -232,6 +237,9 @@ static THD_FUNCTION(ProcessAudio, arg) {
 
          }
  #endif  /* SEND_FROM_MIC */
+     }
+     while(1){
+ 		obstacle();
      }
 
 }
