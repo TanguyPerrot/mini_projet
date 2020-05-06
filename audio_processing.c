@@ -11,6 +11,7 @@
 #include <fft.h>
 #include <arm_math.h>
 #include <detector.h>
+#include <stdbool.h>
 
 //semaphore
 static BSEMAPHORE_DECL(sendToComputer_sem, TRUE);
@@ -27,6 +28,7 @@ static float micFront_output[FFT_SIZE];
 static float micBack_output[FFT_SIZE];
 
 #define MIN_VALUE_THRESHOLD	10000 
+
 
 #define MIN_FREQ		20	//we don't analyze before this index to not use resources for nothing
 #define FREQ_FORWARD	35	//550Hz
@@ -45,10 +47,10 @@ static float micBack_output[FFT_SIZE];
 *	Simple function used to detect the highest value in a buffer
 *	and to execute a motor command depending on it
 */
-#define OFF 100
-#define ON 	200
+#define OFF 0
+#define ON 	1
 
-int micro = OFF;
+static bool micro = OFF;
 
 void sound_remote(float* data){
 	float max_norm = MIN_VALUE_THRESHOLD;

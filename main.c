@@ -58,7 +58,6 @@ int main(void)
     process_audio_start();
 
     while(1){
-    	//obstacle();
     	chThdSleepMilliseconds(1000);
     }
 

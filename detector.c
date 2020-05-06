@@ -13,6 +13,7 @@
 #include <motors.h>
 #include <chprintf.h>
 #include <math.h>
+#include <stdbool.h>
 
 #define AVANCE 			100  //le robot avance
 #define GAUCHE 			200  //le robot tourne à gauche
@@ -27,23 +28,26 @@
 #define AVANT_GAUCHE	7    //proximity sensor avant gauche
 #define MUR				150  //distance à laquelle il detecte un mur
 #define MUR_CDS			120	 //distance à laquelle il détecte un mur pour le cul de sac
+#define MUR_OMBRE		100
 #define VIDE			80   //distance à laquelle il detecte du vide
+#define MUR_STAB		90
 #define WAIT			200  //temps en milliseconde
 #define CINQ_DEGREE		29   //temps en ms pour tourner de 5°
 #define UN_CM			130  //temps en ms pour parcourir 1 cm
-#define DELTA1_6		20   //intervalle [-20,20] dans lequel le robot reste droit à ±2.5°
+#define DELTA1_6		10   //intervalle [-10,10] dans lequel le robot reste droit à ±1.5°
+#define DELTA1_6_GRAND  30	 //intervalle [-30,30] dans lequel le robot reste droit à ±3.5°
 #define DELTA2_5		75   //intervalle [-75,75] dans lequel le robot reste au centre à ±0.5cm
-#define OKAY			100  //si le robot est stabilisé
-#define NOT_OKAY		200	 // si le robot n'est pas stabilisé
+#define OKAY			1  	 //si le robot est stabilisé
+#define NOT_OKAY		0	 // si le robot n'est pas stabilisé
 
-	int var0 = 0;
-	int var1 = 0;
-	int var2 = 0;
-	int var5 = 0;
-	int var6 = 0;
-	int var7 = 0;
-	int compteur = 0;
-	int stab = 0;
+	static int var0 = 0;
+	static int var1 = 0;
+	static int var2 = 0;
+	static int var5 = 0;
+	static int var6 = 0;
+	static int var7 = 0;
+	static int compteur = 0;
+	static bool stab = 0;
 
 	void guidage(int a)
 	{
@@ -89,8 +93,6 @@
 		var6 = get_prox(DIAG_GAUCHE);
 		var7 = get_prox(AVANT_GAUCHE);
 
-		//stabilisateur();
-
 		guidage(AVANCE);
 
 		//ouverture à gauche et mur devant
@@ -99,7 +101,7 @@
 
 			reglage_distance(10*UN_CM);
 			var5 = get_prox(LAT_GAUCHE);
-			if(var5 > 90){
+			if(var5 > MUR_STAB){
 				stab = NOT_OKAY;
 				while(stab != OKAY){
 					stabilisateur();
@@ -112,7 +114,7 @@
 
 			reglage_distance(10*UN_CM);
 			var2 = get_prox(LAT_DROITE);
-			if(var2 > 90){
+			if(var2 > MUR_STAB){
 				stab = NOT_OKAY;
 				while(stab != OKAY){
 					stabilisateur();
@@ -129,10 +131,10 @@
 			}
 		}
 		//ouverture à gauche sans mur en face
-		else if((var5 < VIDE) & (var0 < VIDE) & (var7 < VIDE)){
+		else if((var5 < VIDE) & (var0 < VIDE) & (var7 < VIDE) & (var2 > (MUR_OMBRE))){
 			if(compteur == 0){
 				reglage_distance(3*UN_CM);
-				reglage_angle_gauche(18*CINQ_DEGREE);
+				reglage_angle_gauche(18.5*CINQ_DEGREE);
 				reglage_distance(8*UN_CM);
 				stab = NOT_OKAY;
 				while(stab != OKAY){
@@ -146,10 +148,10 @@
 			}
 		}
 		//ouverture à droite sans mur en face
-		else if((var2 < VIDE) & (var0 < VIDE) & (var7 < VIDE)){
+		else if((var2 < VIDE) & (var0 < VIDE) & (var7 < VIDE) & (var5 > (MUR_OMBRE))){
 			if(compteur == 0){
 				reglage_distance(3*UN_CM);
-				reglage_angle_droite(18*CINQ_DEGREE);
+				reglage_angle_droite(18.5*CINQ_DEGREE);
 				reglage_distance(8*UN_CM);
 				stab = NOT_OKAY;
 				while(stab != OKAY){
@@ -161,6 +163,10 @@
 				reglage_distance(14*UN_CM);
 				stabilisateur();
 			}
+		}
+		//sorti du labyrinth
+		else if((var0 < VIDE) & (var7 < VIDE) & (var1 < VIDE) & (var2 < VIDE) & (var5 < VIDE) & (var6 < VIDE)){
+			finish();
 		}
 		else{
 			guidage(AVANCE);
@@ -231,11 +237,10 @@
 		delta2_5 = var2-var5;
 
 
-
+		//si le robot est trop tourné vers la droite
 		if(delta1_6 > DELTA1_6){
 			while(delta1_6 > DELTA1_6){
-				//guidage(GAUCHE);
-				if(delta1_6 > 30){
+				if(delta1_6 > DELTA1_6_GRAND){
 					reglage_angle_gauche(0.5*CINQ_DEGREE);
 				}
 				else{
@@ -245,11 +250,13 @@
 				var6 = get_prox(DIAG_GAUCHE);
 				delta1_6 = var1-var6;
 			}
+			//reglage_angle_droite(0.5*CINQ_DEGREE);
 		}
+
+		//si le robot est trop tourné vers la gauche
 		else if (delta1_6 < -DELTA1_6){
 			while(delta1_6 < -DELTA1_6){
-				//guidage(DROITE);
-				if(delta1_6 < -30){
+				if(delta1_6 < -DELTA1_6_GRAND){
 					reglage_angle_droite(0.5*CINQ_DEGREE);
 				}
 				else{
@@ -260,8 +267,10 @@
 				delta1_6 = var1-var6;
 
 			}
-			reglage_angle_droite(CINQ_DEGREE);
+			//reglage_angle_droite(CINQ_DEGREE);
 		}
+
+		//si le robot n'est pas centré entre les deux murs, proche du mur gauche
 		else if (delta2_5 < -DELTA2_5){
 			reglage_angle_droite(10*CINQ_DEGREE);
 
@@ -269,6 +278,8 @@
 
 			reglage_angle_gauche(10*CINQ_DEGREE);
 		}
+
+		//si le robot n'est pas centré entre les deux murs, proche du mur droit
 		else if (delta2_5 > DELTA2_5){
 
 			reglage_angle_gauche(10*CINQ_DEGREE);
@@ -283,6 +294,14 @@
 	}
 
 
+void finish()
+{
+	reglage_distance(5*UN_CM);
+	while(1){
+		guidage(DROITE);
+		set_body_led(OKAY);
+	}
+}
 void test_stab()
 {
 	var0 = get_prox(0);
