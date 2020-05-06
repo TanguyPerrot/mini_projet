@@ -1,9 +1,3 @@
-/*
- * detector.c
- *
- *  Created on: 16 avr. 2020
- *      Author: Tanguy Perrot
- */
 #include "ch.h"
 #include "hal.h"
 #include <detector.h>
@@ -15,10 +9,10 @@
 #include <math.h>
 #include <stdbool.h>
 
-#define AVANCE 			100  //le robot avance
-#define GAUCHE 			200  //le robot tourne à gauche
-#define DROITE 			300  //le robot tourne à droite
-#define STOP 			400  //le robot s'arrête
+#define FORWARD			100  //Robot goes forward
+#define LEFT 			200  //Robot turns to the left
+#define RIGHT 			300  //Robot turns to the right
+#define STOP 			400  //Robot stops
 #define MOTOR			600
 #define AVANT_DROITE	0    //proximity sensor avant droite
 #define DIAG_DROITE		1    //proximity sensor diagonale droite
@@ -40,45 +34,43 @@
 #define OKAY			1  	 //si le robot est stabilisé
 #define NOT_OKAY		0	 // si le robot n'est pas stabilisé
 
-	static int var0 = 0;
-	static int var1 = 0;
-	static int var2 = 0;
-	static int var5 = 0;
-	static int var6 = 0;
-	static int var7 = 0;
-	static int compteur = 0;
-	static bool stab = 0;
+static int var0 = 0;
+static int var1 = 0;
+static int var2 = 0;
+static int var5 = 0;
+static int var6 = 0;
+static int var7 = 0;
+static int compteur = 0;
+static bool stablizer = 0;
 
-	void guidage(int a)
-	{
-		switch(a){
-		case AVANCE:
-			left_motor_set_speed(MOTOR);
-			right_motor_set_speed(MOTOR);
-			break;
+void guidage(int a)
+{
+	switch(a){
+	case FORWARD:
+		left_motor_set_speed(MOTOR);
+		right_motor_set_speed(MOTOR);
+		break;
 
-		case GAUCHE:
-			left_motor_set_speed(-MOTOR);
-			right_motor_set_speed(MOTOR);
-			break;
+	case LEFT:
+		left_motor_set_speed(-MOTOR);
+		right_motor_set_speed(MOTOR);
+		break;
 
-		case DROITE:
-			left_motor_set_speed(MOTOR);
-			right_motor_set_speed(-MOTOR);
-			break;
-
+	case RIGHT:
+		left_motor_set_speed(MOTOR);
+		right_motor_set_speed(-MOTOR);
+		break;
 		case STOP:
-			left_motor_set_speed(0);
-			right_motor_set_speed(0);
-			break;
-
+		left_motor_set_speed(0);
+		right_motor_set_speed(0);
+		break;
 		default:
-			break;
-		}
+		break;
 	}
+}
 
-	void obstacle()
-	{
+void obstacle()
+{
 
 	if(compteur == 0){
 		set_led(LED1, 0);
@@ -86,212 +78,206 @@
 	else{
 		set_led(LED1, 1);
 	}
-		var0 = get_prox(AVANT_DROITE);
-		var1 = get_prox(DIAG_DROITE);
-		var2 = get_prox(LAT_DROITE);
+	var0 = get_prox(AVANT_DROITE);
+	var1 = get_prox(DIAG_DROITE);
+	var2 = get_prox(LAT_DROITE);
+	var5 = get_prox(LAT_GAUCHE);
+	var6 = get_prox(DIAG_GAUCHE);
+	var7 = get_prox(AVANT_GAUCHE);
+	guidage(FORWARD);
+
+	//Open on the left and an obstacle in the front
+	if ((var0 > MUR) & (var7 > MUR) & (var5 < VIDE)){
+		reglage_angle_gauche(18.5*CINQ_DEGREE);
+		reglage_distance(10*UN_CM);
 		var5 = get_prox(LAT_GAUCHE);
-		var6 = get_prox(DIAG_GAUCHE);
-		var7 = get_prox(AVANT_GAUCHE);
+		if(var5 > MUR_STAB){
+			stablizer = NOT_OKAY;
+			while(stablizer != OKAY){
+				stabilisateur();
+			}
+		}
+	}
 
-		guidage(AVANCE);
+	//Open on the right and an obstacle in the front
+	else if((var0 > MUR) & (var7 > MUR) & (var2 < VIDE)){
+		reglage_angle_droite(18.5*CINQ_DEGREE);
+		reglage_distance(10*UN_CM);
+		var2 = get_prox(LAT_DROITE);
+		if(var2 > MUR_STAB){
+			stablizer = NOT_OKAY;
+			while(stablizer != OKAY){
+				stabilisateur();
+			}
+		}
+	}
 
-		//ouverture à gauche et mur devant
-		if ((var0 > MUR) & (var7 > MUR) & (var5 < VIDE)){
+	//Cul-de-sac
+	else if((var0 > MUR_CDS) & (var7 > MUR_CDS) & (var5 > MUR_CDS) & (var2 > MUR_CDS)){
+		reglage_angle_gauche(36*CINQ_DEGREE);
+		compteur++;
+		stablizer = NOT_OKAY;
+		while(stablizer != OKAY){
+			stabilisateur();
+		}
+	}
+
+	//Open on the left without an obstacle in the front
+	else if((var5 < VIDE) & (var0 < VIDE) & (var7 < VIDE) & (var2 > (MUR_OMBRE))){
+		if(compteur == 0){
+			reglage_distance(3*UN_CM);
 			reglage_angle_gauche(18.5*CINQ_DEGREE);
-
-			reglage_distance(10*UN_CM);
-			var5 = get_prox(LAT_GAUCHE);
-			if(var5 > MUR_STAB){
-				stab = NOT_OKAY;
-				while(stab != OKAY){
+			reglage_distance(8*UN_CM);
+			stablizer = NOT_OKAY;
+			while(stablizer != OKAY){
 					stabilisateur();
-				}
 			}
 		}
-		//ouverture à droite et mur devant
-		else if((var0 > MUR) & (var7 > MUR) & (var2 < VIDE)){
+		else{
+			compteur--;
+			reglage_distance(14*UN_CM);
+			stabilisateur();
+		}
+	}
+
+	//Open on the right without an obstacle in the front
+	else if((var2 < VIDE) & (var0 < VIDE) & (var7 < VIDE) & (var5 > (MUR_OMBRE))){
+		if(compteur == 0){
+			reglage_distance(3*UN_CM);
 			reglage_angle_droite(18.5*CINQ_DEGREE);
-
-			reglage_distance(10*UN_CM);
-			var2 = get_prox(LAT_DROITE);
-			if(var2 > MUR_STAB){
-				stab = NOT_OKAY;
-				while(stab != OKAY){
-					stabilisateur();
-				}
-			}
-		}
-		// cul de sac
-		else if((var0 > MUR_CDS) & (var7 > MUR_CDS) & (var5 > MUR_CDS) & (var2 > MUR_CDS)){
-			reglage_angle_gauche(36*CINQ_DEGREE);
-			compteur++;
-			stab = NOT_OKAY;
-			while(stab != OKAY){
+			reglage_distance(8*UN_CM);
+			stablizer = NOT_OKAY;
+			while(stablizer != OKAY){
 				stabilisateur();
 			}
-		}
-		//ouverture à gauche sans mur en face
-		else if((var5 < VIDE) & (var0 < VIDE) & (var7 < VIDE) & (var2 > (MUR_OMBRE))){
-			if(compteur == 0){
-				reglage_distance(3*UN_CM);
-				reglage_angle_gauche(18.5*CINQ_DEGREE);
-				reglage_distance(8*UN_CM);
-				stab = NOT_OKAY;
-				while(stab != OKAY){
-					stabilisateur();
-				}
-			}
-			else{
-				compteur--;
-				reglage_distance(14*UN_CM);
-				stabilisateur();
-			}
-		}
-		//ouverture à droite sans mur en face
-		else if((var2 < VIDE) & (var0 < VIDE) & (var7 < VIDE) & (var5 > (MUR_OMBRE))){
-			if(compteur == 0){
-				reglage_distance(3*UN_CM);
-				reglage_angle_droite(18.5*CINQ_DEGREE);
-				reglage_distance(8*UN_CM);
-				stab = NOT_OKAY;
-				while(stab != OKAY){
-					stabilisateur();
-				}
-			}
-			else{
-				compteur--;
-				reglage_distance(14*UN_CM);
-				stabilisateur();
-			}
-		}
-		//sorti du labyrinth
-		else if((var0 < VIDE) & (var7 < VIDE) & (var1 < VIDE) & (var2 < VIDE) & (var5 < VIDE) & (var6 < VIDE)){
-			finish();
 		}
 		else{
-			guidage(AVANCE);
+			compteur--;
+			reglage_distance(14*UN_CM);
+			stabilisateur();
 		}
 	}
 
-	//rotation de robot à gauche
-	void reglage_angle_gauche(int n)
-	{
+	//Exit of the maze: proximity sensors detect nothing
+	else if((var0 < VIDE) & (var7 < VIDE) & (var1 < VIDE) & (var2 < VIDE) & (var5 < VIDE) & (var6 < VIDE)){
+		finish();
+	}
+	else{
+		guidage(FORWARD);
+	}
+}
 
-		systime_t start = chVTGetSystemTime();
-		systime_t end = start + MS2ST(n);
+//Rotation of the robot to the left
+void reglage_angle_gauche(int n)
+{
+	systime_t start = chVTGetSystemTime();
+	systime_t end = start + MS2ST(n);
 
-		while (chVTIsSystemTimeWithin(start, end)){
-			guidage(GAUCHE);
+	while (chVTIsSystemTimeWithin(start, end)){
+		guidage(GAUCHE);
+	}
+	start = chVTGetSystemTime();
+	end = start + MS2ST(WAIT);
 
-		}
-		start = chVTGetSystemTime();
-		end = start + MS2ST(WAIT);
+	while (chVTIsSystemTimeWithin(start, end)){
+		guidage(STOP);
+	}
+}
 
-		while (chVTIsSystemTimeWithin(start, end)){
-			guidage(STOP);
+//Rotation of the robot to the right
+void reglage_angle_droite(int n)
+{
+	systime_t start = chVTGetSystemTime();
+	systime_t end = start + MS2ST(n);
+
+	while (chVTIsSystemTimeWithin(start, end)){
+		guidage(DROITE);
+	}
+	start = chVTGetSystemTime();
+	end = start + MS2ST(WAIT);
+
+	while (chVTIsSystemTimeWithin(start, end)){
+		guidage(STOP);
+	}
+}
+
+//Robot moves forward of n times 2-3 cm
+void reglage_distance(int n)
+{
+	systime_t start = chVTGetSystemTime();
+	systime_t end = start + MS2ST(n);
+
+	while (chVTIsSystemTimeWithin(start, end)){
+		guidage(FORWARD);
+	}
+}
+
+void stabilisateur()
+{
+	int delta1_6;
+	int	delta2_5;
+
+	var1 = get_prox(DIAG_DROITE);
+	var2 = get_prox(LAT_DROITE);
+	var5 = get_prox(LAT_GAUCHE);
+	var6 = get_prox(DIAG_GAUCHE);
+
+	delta1_6 = var1-var6;
+	delta2_5 = var2-var5;
+
+
+	//Adjusment of the angle of the robot when it is turned more to the right
+	if(delta1_6 > DELTA1_6){
+		while(delta1_6 > DELTA1_6){
+			if(delta1_6 > DELTA1_6_GRAND){
+				reglage_angle_gauche(0.5*CINQ_DEGREE);
 			}
-		}
-
-	//rotation du robot à droite
-	void reglage_angle_droite(int n)
-		{
-
-			systime_t start = chVTGetSystemTime();
-			systime_t end = start + MS2ST(n);
-
-			while (chVTIsSystemTimeWithin(start, end)){
-				guidage(DROITE);
-
+			else{
+				reglage_angle_gauche(0.2*CINQ_DEGREE);
 			}
-			start = chVTGetSystemTime();
-			end = start + MS2ST(WAIT);
-
-			while (chVTIsSystemTimeWithin(start, end)){
-				guidage(STOP);
-				}
-			}
-
-	//avvance du robot de 2-3 cm
-	void reglage_distance(int n)
-	{
-		systime_t start = chVTGetSystemTime();
-		systime_t end = start + MS2ST(n);
-
-		while (chVTIsSystemTimeWithin(start, end)){
-			guidage(AVANCE);
-
+			var1 = get_prox(DIAG_DROITE);
+			var6 = get_prox(DIAG_GAUCHE);
+			delta1_6 = var1-var6;
 		}
 	}
 
-	void stabilisateur()
-	{
-		int delta1_6;
-		int	delta2_5;
-
-		var1 = get_prox(DIAG_DROITE);
-		var2 = get_prox(LAT_DROITE);
-		var5 = get_prox(LAT_GAUCHE);
-		var6 = get_prox(DIAG_GAUCHE);
-
-		delta1_6 = var1-var6;
-		delta2_5 = var2-var5;
-
-
-		//si le robot est trop tourné vers la droite
-		if(delta1_6 > DELTA1_6){
-			while(delta1_6 > DELTA1_6){
-				if(delta1_6 > DELTA1_6_GRAND){
-					reglage_angle_gauche(0.5*CINQ_DEGREE);
-				}
-				else{
-					reglage_angle_gauche(0.2*CINQ_DEGREE);
-				}
-				var1 = get_prox(DIAG_DROITE);
-				var6 = get_prox(DIAG_GAUCHE);
-				delta1_6 = var1-var6;
+	//Adjusment of the angle of the robot when it is turned more to the left
+	else if (delta1_6 < -DELTA1_6){
+		while(delta1_6 < -DELTA1_6){
+			if(delta1_6 < -DELTA1_6_GRAND){
+				reglage_angle_droite(0.5*CINQ_DEGREE);
 			}
-			//reglage_angle_droite(0.5*CINQ_DEGREE);
-		}
-
-		//si le robot est trop tourné vers la gauche
-		else if (delta1_6 < -DELTA1_6){
-			while(delta1_6 < -DELTA1_6){
-				if(delta1_6 < -DELTA1_6_GRAND){
-					reglage_angle_droite(0.5*CINQ_DEGREE);
-				}
-				else{
-					reglage_angle_droite(0.2*CINQ_DEGREE);
-				}
-				var1 = get_prox(DIAG_DROITE);
-				var6 = get_prox(DIAG_GAUCHE);
-				delta1_6 = var1-var6;
-
+			else{
+				reglage_angle_droite(0.2*CINQ_DEGREE);
 			}
-			//reglage_angle_droite(CINQ_DEGREE);
-		}
-
-		//si le robot n'est pas centré entre les deux murs, proche du mur gauche
-		else if (delta2_5 < -DELTA2_5){
-			reglage_angle_droite(10*CINQ_DEGREE);
-
-			reglage_distance(0.75*WAIT);
-
-			reglage_angle_gauche(10*CINQ_DEGREE);
-		}
-
-		//si le robot n'est pas centré entre les deux murs, proche du mur droit
-		else if (delta2_5 > DELTA2_5){
-
-			reglage_angle_gauche(10*CINQ_DEGREE);
-
-			reglage_distance(0.75*WAIT);
-
-			reglage_angle_droite(10*CINQ_DEGREE);
-		}
-		else{
-			stab = OKAY;
-		}
+			var1 = get_prox(DIAG_DROITE);
+			var6 = get_prox(DIAG_GAUCHE);
+			delta1_6 = var1-var6;
+			}
 	}
+
+	//Adjusment of the robot when it is not centered on its path: closer to the left wall
+	else if (delta2_5 < -DELTA2_5){
+		reglage_angle_droite(10*CINQ_DEGREE);
+
+		reglage_distance(0.75*WAIT);
+
+		reglage_angle_gauche(10*CINQ_DEGREE);
+	}
+
+	//Adjusment of the robot when it is not centered on its path: closer to the right wall
+	else if (delta2_5 > DELTA2_5){
+
+		reglage_angle_gauche(10*CINQ_DEGREE);
+
+		reglage_distance(0.75*WAIT);
+
+		reglage_angle_droite(10*CINQ_DEGREE);
+	}
+	else{
+		stablizer = OKAY;
+	}
+}
 
 
 void finish()
@@ -312,6 +298,3 @@ void test_stab()
 	var7 = get_prox(7);
 	chprintf((BaseSequentialStream *)&SD3, "%d %d %d %d\r\n", var1, var6, var2, var5);
 }
-
-
-
