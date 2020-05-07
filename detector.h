@@ -1,10 +1,3 @@
-/*
- * detector.h
- *
- *  Created on: 16 avr. 2020
- *      Author: Tanguy Perrot
- */
-
 #ifndef DETECTOR_H_
 #define DETECTOR_H_
 
@@ -20,15 +13,26 @@
 #define DIAG_GAUCHE		6    //proximity sensor diagonal gauche
 #define AVANT_GAUCHE	7    //proximity sensor avant gauche
 #define MUR				150  //distance à laquelle il detecte un mur
-#define MUR_CDS			120	 //distance à laquelle il détecte un mur pour le cul de sac
+#define MUR_CDS			120	 //distance à laquelle il détecte un mur pour le cul de sac(CDS)
 #define MUR_OMBRE		100
 #define VIDE			80   //distance à laquelle il detecte du vide
 #define MUR_STAB		90
-#define WAIT			200  //temps en milliseconde
-#define CINQ_DEGREE		29   //temps en ms pour tourner de 5°
-#define UN_CM			130  //temps en ms pour parcourir 1 cm
+#define DIST_STAB		150  //temps en ms, se déplacer par accoup
+#define ROT_WAIT		200  //temps en milliseconde, faire une pause, tourner en accoups
+#define DEMI_DEG		2.9  //temps en ms pour tourner de 0.5°, pour se stabiliser
+#define CINQ_DEG		29   //temps en ms pour tourner de 5°
+#define ROT_STAB		290  //temps en ms pour tourner de 50° pour se stabiliser
+#define QUART_TOUR_G	536.5//temps en ms pour tourner d'un quart de tour à gauche
+#define QUART_TOUR_D	551	 //temps en ms pour tourner d'un quart de tour à droite
+#define DEMI_TOUR		1015 //temps en ms pour tourner d'un demi tour
+#define ROT_OUVERTURE_1	390  //temps en ms pour parcourir la distance pour être au centre de l'ouverture (3 cm)
+#define ROT_OUVERTURE_2	1040 //temps en ms pour parcourir la distance pour être à nouveau entre deux murs (8 cm)
+#define DIST_MUR		1300 //temps en ms pour parcourir la distance pour être de nouveau ente deux murs (10 cm)
+#define DIST_CDS		1820 //temps en ms pour passer outre une ouverture àprès un cul de sac(CDS) (14 cm)
+#define DIST_END		650  //temps en ms pour parcourir la disatnce finale (5cm)
+
 #define DELTA1_6		10   //intervalle [-10,10] dans lequel le robot reste droit à ±1.5°
-#define DELTA1_6_GRAND  35	 //intervalle [-30,30] dans lequel le robot reste droit à ±3.5°
+#define DELTA1_6_GRAND  35	 //intervalle [-35,35] dans lequel le robot reste droit à ±3.5°
 #define DELTA2_5		75   //intervalle [-75,75] dans lequel le robot reste au centre à ±0.5cm
 #define OKAY			1  	 //si le robot est stabilisé
 #define NOT_OKAY		0	 // si le robot n'est pas stabilisé
