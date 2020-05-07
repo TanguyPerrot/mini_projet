@@ -44,6 +44,7 @@ static float micLeft_output[FFT_SIZE];
 */
 #define OFF 0
 #define ON 	1
+#define MEMORY 800 	//la mémoire dont le thread a besoin
 
 //send_tab is used to save the state of the buffer to send (double buffering)
 //to avoid modifications of the buffer while sending it
@@ -162,7 +163,7 @@ float* get_audio_buffer_ptr(BUFFER_NAME_t name){
 	}
 }
 
-static THD_WORKING_AREA(waProcessAudio, 8192);
+static THD_WORKING_AREA(waProcessAudio, MEMORY);
 static THD_FUNCTION(ProcessAudio, arg) {
 
     chRegSetThreadName(__FUNCTION__);
@@ -205,6 +206,7 @@ static THD_FUNCTION(ProcessAudio, arg) {
 		#endif  /* SEND_FROM_MIC */
     }
     while(1){
+    	//test_stab();
     	obstacle();
     }
 }

@@ -285,7 +285,7 @@ void test_stab()
 	tab_prox[LAT_GAUCHE] = get_prox(LAT_GAUCHE);
 	tab_prox[DIAG_GAUCHE] = get_prox(DIAG_GAUCHE);
 	tab_prox[AVANT_GAUCHE] = get_prox(AVANT_GAUCHE);
-	chprintf((BaseSequentialStream *)&SD3, "%d %d %d %d\r\n", tab_prox[DIAG_DROITE], tab_prox[LAT_GAUCHE], tab_prox[LAT_DROITE], tab_prox[LAT_GAUCHE	]);
+	chprintf((BaseSequentialStream *)&SD3, "%d %d %d %d %d %d\r\n", tab_prox[DIAG_DROITE], tab_prox[LAT_GAUCHE], tab_prox[LAT_DROITE], tab_prox[LAT_GAUCHE], tab_prox[AVANT_GAUCHE], tab_prox[AVANT_DROITE]);
 }
 
 
