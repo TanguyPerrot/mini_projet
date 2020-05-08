@@ -206,7 +206,6 @@ static THD_FUNCTION(ProcessAudio, arg) {
 		#endif  /* SEND_FROM_MIC */
     }
     while(1){
-    	//test_stab();
     	obstacle();
     }
 }

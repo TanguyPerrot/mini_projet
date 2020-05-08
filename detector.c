@@ -66,9 +66,9 @@ void obstacle()
 	if ((tab_prox[AVANT_DROITE] > MUR) & (tab_prox[AVANT_GAUCHE] > MUR) & (tab_prox[LAT_GAUCHE] < VIDE)){
 		reglage_angle_gauche(QUART_TOUR_G);
 
-		reglage_distance(DIST_MUR);
+		reglage_distance(DIST_MUR_10CM);
 		tab_prox[LAT_GAUCHE] = get_prox(LAT_GAUCHE);
-		if(tab_prox[LAT_GAUCHE] > MUR_STAB){
+		if((tab_prox[LAT_GAUCHE] > MUR_STAB_LAT) & (tab_prox[DIAG_GAUCHE] > MUR_STAB_DIAG)){
 			stab = NOT_OKAY;
 			while(stab != OKAY){
 				stabilisateur();
@@ -79,15 +79,62 @@ void obstacle()
 	else if((tab_prox[AVANT_DROITE] > MUR) & (tab_prox[AVANT_GAUCHE] > MUR) & (tab_prox[LAT_DROITE] < VIDE)){
 		reglage_angle_droite(QUART_TOUR_D);
 
-		reglage_distance(DIST_MUR);
+		reglage_distance(DIST_MUR_10CM);
 		tab_prox[LAT_DROITE] = get_prox(LAT_DROITE);
-		if(tab_prox[LAT_DROITE] > MUR_STAB){
+		if((tab_prox[LAT_DROITE] > MUR_STAB_LAT) & (tab_prox[DIAG_DROITE] > MUR_STAB_DIAG)){
 			stab = NOT_OKAY;
 			while(stab != OKAY){
 				stabilisateur();
 			}
 			if(compteur > 0){
 				reglage_angle_droite(CINQ_DEG);
+			}
+		}
+	}
+
+	//Open on the left without an obstacle in the front
+	else if((tab_prox[LAT_GAUCHE] < VIDE) & (tab_prox[AVANT_GAUCHE] < VIDE) & (tab_prox[LAT_DROITE] > (MUR_OMBRE))){
+		reglage_distance(DIST_OUVERTURE_4CM);
+		if(tab_prox[AVANT_GAUCHE] < VIDE){
+
+
+			if(compteur == 0){
+				reglage_angle_gauche(QUART_TOUR_G);
+				reglage_distance(DIST_OUVERTURE_8CM);
+				stab = NOT_OKAY;
+				while(stab != OKAY){
+					stabilisateur();
+				}
+			}
+			else{
+				compteur--;
+				reglage_distance(DIST_CDS_14CM);
+				stab = NOT_OKAY;
+				while(stab != OKAY){
+					stabilisateur();
+				}
+			}
+		}
+	}
+	//Open on the right without an obstacle in the front
+	else if((tab_prox[LAT_DROITE] < VIDE) & (tab_prox[AVANT_DROITE] < VIDE) & (tab_prox[LAT_GAUCHE] > (MUR_OMBRE))){
+		reglage_distance(DIST_OUVERTURE_4CM);
+		if(tab_prox[AVANT_DROITE] < VIDE){
+			if(compteur == 0){
+				reglage_angle_droite(QUART_TOUR_G);
+				reglage_distance(DIST_OUVERTURE_8CM);
+				stab = NOT_OKAY;
+				while(stab != OKAY){
+					stabilisateur();
+				}
+			}
+			else{
+				compteur--;
+				reglage_distance(DIST_CDS_14CM);
+				stab = NOT_OKAY;
+				while(stab != OKAY){
+					stabilisateur();
+				}
 			}
 		}
 	}
@@ -98,46 +145,6 @@ void obstacle()
 		stab = NOT_OKAY;
 		while(stab != OKAY){
 			stabilisateur();
-		}
-	}
-	//Open on the left without an obstacle in the front
-	else if((tab_prox[LAT_GAUCHE] < VIDE) & (tab_prox[AVANT_DROITE] < VIDE) & (tab_prox[AVANT_GAUCHE] < VIDE) & (tab_prox[LAT_DROITE] > (MUR_OMBRE))){
-		if(compteur == 0){
-			reglage_distance(ROT_OUVERTURE_1);
-			reglage_angle_gauche(QUART_TOUR_G);
-			reglage_distance(ROT_OUVERTURE_2);
-			stab = NOT_OKAY;
-			while(stab != OKAY){
-				stabilisateur();
-			}
-		}
-		else{
-			compteur--;
-			reglage_distance(DIST_CDS);
-			stab = NOT_OKAY;
-			while(stab != OKAY){
-				stabilisateur();
-			}
-		}
-	}
-	//Open on the right without an obstacle in the front
-	else if((tab_prox[LAT_DROITE] < VIDE) & (tab_prox[AVANT_DROITE] < VIDE) & (tab_prox[AVANT_GAUCHE] < VIDE) & (tab_prox[LAT_GAUCHE] > (MUR_OMBRE))){
-		if(compteur == 0){
-			reglage_distance(ROT_OUVERTURE_1);
-			reglage_angle_droite(QUART_TOUR_G);
-			reglage_distance(ROT_OUVERTURE_2);
-			stab = NOT_OKAY;
-			while(stab != OKAY){
-				stabilisateur();
-			}
-		}
-		else{
-			compteur--;
-			reglage_distance(DIST_CDS);
-			stab = NOT_OKAY;
-			while(stab != OKAY){
-				stabilisateur();
-			}
 		}
 	}
 	//Exit of the maze: proximity sensors detect nothing
@@ -271,7 +278,7 @@ void stabilisateur()
 
 void finish()
 {
-	reglage_distance(DIST_END);
+	reglage_distance(DIST_END_5CM);
 	while(1){
 		guidage(DROITE);
 		set_body_led(OKAY);
@@ -285,7 +292,7 @@ void test_stab()
 	tab_prox[LAT_GAUCHE] = get_prox(LAT_GAUCHE);
 	tab_prox[DIAG_GAUCHE] = get_prox(DIAG_GAUCHE);
 	tab_prox[AVANT_GAUCHE] = get_prox(AVANT_GAUCHE);
-	chprintf((BaseSequentialStream *)&SD3, "%d %d %d %d %d %d\r\n", tab_prox[DIAG_DROITE], tab_prox[LAT_GAUCHE], tab_prox[LAT_DROITE], tab_prox[LAT_GAUCHE], tab_prox[AVANT_GAUCHE], tab_prox[AVANT_DROITE]);
+	chprintf((BaseSequentialStream *)&SD3, "%d %d %d %d %d %d\r\n", tab_prox[DIAG_DROITE], tab_prox[DIAG_GAUCHE], tab_prox[LAT_DROITE], tab_prox[LAT_GAUCHE], tab_prox[AVANT_GAUCHE], tab_prox[AVANT_DROITE]);
 }
 
 
