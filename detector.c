@@ -148,13 +148,16 @@ void obstacle()
 		}
 	}
 	//Exit of the maze: proximity sensors detect nothing
-	else if((tab_prox[AVANT_DROITE] < VIDE) & (tab_prox[AVANT_GAUCHE] < VIDE) & (tab_prox[DIAG_DROITE] < VIDE) & (tab_prox[LAT_DROITE] < VIDE) & (tab_prox[LAT_GAUCHE] < VIDE) & (tab_prox[DIAG_GAUCHE] < VIDE)){
-		finish();
+	else if((tab_prox[AVANT_DROITE] < VIDE) & (tab_prox[AVANT_GAUCHE] < VIDE) & (tab_prox[DIAG_DROITE] < VIDE) & (tab_prox[DIAG_GAUCHE] < VIDE)){
+		reglage_distance(DIST_OUVERTURE_4CM);
+		if((tab_prox[LAT_GAUCHE] > MUR_STAB_LAT) | (tab_prox[LAT_DROITE] > MUR_STAB_LAT)){
+			finish();
+		}
 	}
 	else{
 		guidage(AVANCE);
 	}
-	//proximity sensors frequency is about 100 Hz (10ms)
+	//proximity sensors frequency is about   Hz (10ms)
 	chThdSleepMilliseconds(10);
 
 }
