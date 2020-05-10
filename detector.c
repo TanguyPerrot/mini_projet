@@ -1,11 +1,9 @@
 #include "ch.h"
 #include "hal.h"
 #include <detector.h>
-#include <main.h>
 #include <sensors/proximity.h>
 #include <leds.h>
 #include <motors.h>
-#include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
 

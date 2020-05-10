@@ -1,13 +1,11 @@
 #include "ch.h"
 #include "hal.h"
-#include <main.h>
 #include <usbcfg.h>
-#include <motors.h>
 #include <audio/microphone.h>
 #include <audio_processing.h>
 #include <communications.h>
 #include <fft.h>
-//#include <arm_math.h>
+#include <arm_math.h>
 #include <detector.h>
 #include <stdbool.h>
 
@@ -148,7 +146,7 @@ float* get_audio_buffer_ptr(BUFFER_NAME_t name){
 static THD_WORKING_AREA(waProcessAudio, MEMORY);
 
 
-static THD_AUDIO_PROCESSING(ProcessAudio, arg){
+static THD_FUNCTION(ProcessAudio, arg){
 
     chRegSetThreadName(__FUNCTION__);
     (void)arg;
