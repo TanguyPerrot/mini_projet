@@ -1,67 +1,72 @@
 #ifndef DETECTOR_H_
 #define DETECTOR_H_
 
-#define AVANCE				100  //le robot avance
-#define GAUCHE 				200  //le robot tourne à gauche
-#define DROITE 				300  //le robot tourne à droite
-#define STOP 				400  //le robot s'arrête
-#define MOTOR				600
-#define AVANT_DROITE		0    //proximity sensor avant droite
-#define DIAG_DROITE			1    //proximity sensor diagonale droite
-#define LAT_DROITE			2    //proximity sensor latéral droite
-#define LAT_GAUCHE			5    //proximity sensor latéral gauche
-#define DIAG_GAUCHE			6    //proximity sensor diagonal gauche
-#define AVANT_GAUCHE		7    //proximity sensor avant gauche
-#define MUR					150  //distance à laquelle il detecte un mur
-#define MUR_CDS				120	 //distance à laquelle il détecte un mur pour le cul de sac(CDS)
-#define MUR_OMBRE			100
-#define VIDE				80   //distance à laquelle il detecte du vide
-#define MUR_STAB_LAT		90	 //distance à laquelle il detecte un mur pour se stabiliser (latéral)
-#define MUR_STAB_DIAG		95	 //distance à laquelle il detecte un mur pour se stabiliser (diagonal)
-#define DIST_STAB			150  //temps en ms, se déplacer par accoup
-#define ROT_WAIT			200  //temps en milliseconde, faire une pause, tourner en accoups
-#define DEMI_DEG			2.9  //temps en ms pour tourner de 0.5°, pour se stabiliser
-#define CINQ_DEG			29   //temps en ms pour tourner de 5°
-#define ROT_STAB			290  //temps en ms pour tourner de 50° pour se stabiliser
-#define QUART_TOUR_G		536.5//temps en ms pour tourner d'un quart de tour à gauche
-#define QUART_TOUR_D		551	 //temps en ms pour tourner d'un quart de tour à droite
-#define DEMI_TOUR			1015 //temps en ms pour tourner d'un demi tour
-#define DIST_OUVERTURE_4CM	520  //temps en ms pour parcourir la distance pour être au centre de l'ouverture (4 cm)
-#define DIST_OUVERTURE_8CM	1040 //temps en ms pour parcourir la distance pour être à nouveau entre deux murs (8 cm)
-#define DIST_MUR_10CM		1300 //temps en ms pour parcourir la distance pour être de nouveau ente deux murs (10 cm)
-#define DIST_CDS_14CM		1820 //temps en ms pour passer outre une ouverture àprès un cul de sac(CDS) (14 cm)
-#define DIST_END_5CM		650  //temps en ms pour parcourir la disatnce finale (5cm)
+#define OFF 						0
+#define ON 							1
+#define TEN_MILLISECONDS			10
 
-#define DELTA1_6			10   //intervalle [-10,10] dans lequel le robot reste droit à ±1.5°
-#define DELTA1_6_GRAND  	35	 //intervalle [-35,35] dans lequel le robot reste droit à ±3.5°
-#define DELTA2_5			75   //intervalle [-75,75] dans lequel le robot reste au centre à ±0.5cm
-#define OKAY				1  	 //si le robot est stabilisé
-#define NOT_OKAY			0	 // si le robot n'est pas stabilisé
+#define FORWARD						100  //the robot goes forward
+#define LEFT 						200  //the robot turns to the left
+#define RIGHT 						300  //the robot turns to the right
+#define STOP 						400  //the robot stops
+#define MOTOR						600	 //value at which the robot starts to move
+
+#define FRONT_RIGHT					0    //proximity sensor on the front right sided
+#define DIAG_RIGHT					1    //proximity sensor diagonal on the right
+#define LAT_RIGHT					2    //proximity sensor lateral on the right
+#define LAT_LEFT					5    //proximity sensor lateral on the left
+#define DIAG_LEFT					6    //proximity sensor diagonal on the left
+#define FRONT_LEFT					7    //proximity sensor on the front left sided
+
+#define WALL						150  //distance at which the robot detects a wall
+#define WALL_CDS					120	 //distance at which the robot detects a wall in the Cul-de-sac(CDS)
+#define WALL_OMBRE					100  //distance at which the robot detects a wall on the right/left : open on the left/right without an obstacle in the front
+#define VIDE						80   //distance at which the robot detects nothing: there is only void around it
+#define WALL_STAB_LAT				90	 //distance at which the robot detects a wall to stabilize (lateral)
+#define WALL_STAB_DIAG				95	 //distance at which the robot detects a wall to stabilize (diagonal)
+
+#define DIST_STAB					150  //time in ms, displacement w/ à-coups
+#define ROT_WAIT					200  //time in ms, stop for a pause, turn w/ à-coups
+#define HALF_DEG					2.9  //time in ms to turn about 0.5°, in order to stabilize
+#define FIVE_DEG					29   //time in ms to turn about 5°
+#define ROT_STAB					290  //time in ms to turn about 50° in order to stabilize
+#define QUART_TURN_LEFT				536.5//time in ms to turn a quater turn to the left
+#define QUART_TURN_RIGHT			551	 //time in ms to turn a quater turn to the right
+#define HALF_TURN					1015 //time in ms to turn a half turn
+
+#define CENTER_BEFORE_OPNG			520  //time in ms to travel a distance (estimated 4cm) to be centered at the opening
+#define DIST_2B_BTW_2WALLS_OPNG		1040 //time in ms to travel a distance (estimated 8cm) to be again well placed between two walls while detecting an opening
+#define DIST_2B_BTW_2WALLS_OBST		1300 //time in ms to travel a distance (estimated 10cm) to be again well placed between two walls while detecting an obstacle
+#define DIST_PASS_OPNG				1820 //time in ms to pass the entrance opening after going in the Cul-de-sac, it travels 14cm
+#define DIST_AT_END		   			650  //time in ms to travel a distance of around 5cm when reaching the end of the maze
+
+#define DELTA_DIAG					10   //band of [-10,10] in which the robot stays directed straight forward w/ ±1.5°
+#define DELTA_DIAG_GRAND  			35	 //band of [-35,35] in which the robot stays directed straight forward w/ ±3.5°
+#define DELTA_LAT					75   //band of [-75,75] in which the robot stays in the center w/ ±0.5cm
+#define OKAY						1  	 //Robot is stabilized on its path
+#define NOT_OKAY					0	 //Robot is not stabilized on its path
+
+
 
 //Depending on the variable a, the robot will go forward, stop, turn to the right or the left
-void guidage(int a);
+void move_guidance(int a);
 
-//Diffrent senarios of when the robot meets an obstacle and how it moves then
+//Different scenarios of when the robot meets an obstacle and how it moves then
 void obstacle(void);
 
 //The robot turns to the left with an angle of n times 5 degrees
-void reglage_angle_gauche(int n);
+void reglage_left_angle(int n);
 
 //The robot turns to the right with an angle of n times 5 degrees
-void reglage_angle_droite(int n);
+void reglage_right_angle(int n);
 
-//The robot will move forward with a distance of n times 2 (up to 3) cm  n fois (2 à 3) centimètres
+//The robot will move forward with a distance of n times 2 (up to 3) cm
 void reglage_distance(int n);
 
-//The robot will stabilize at the center of its path and will be positionned to move straight forward
-void stabilisateur(void);
+//The robot will stabilize at the center of its path and will be positioned to move straight forward
+void stabilize_robot(void);
 
-//Manges how to know when the robot reaches the end of the maze
-void finish(void);
-
-void test_stab(void);
-
-
-
+//Manages how to know when the robot reaches the end of the maze
+void end(void);
 
 #endif /* DETECTOR_H_ */

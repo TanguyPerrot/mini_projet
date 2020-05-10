@@ -5,31 +5,33 @@
 #include <sensors/proximity.h>
 #include <leds.h>
 #include <motors.h>
-#include <chprintf.h>
 #include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
 
-	static uint16_t tab_prox[8] = {0,0,0,0,0,0,0,0};
-	static int delta1_6 = 0;
-	static int delta2_5 = 0;
-	static int compteur = 0;
-	static bool stab = 0;
+//The detected values by the proximity sensors can go up to 4'000 so 16 bits were requiered
+//we only use 6 proximty sensors out of 8
+static uint16_t tab_prox[8] = {0,0,0,0,0,0,0,0};
+static int delta_diag = 0;	//the difference between the values received by the diagonal proximity sensors on both sides
+static int delta_lat = 0; 	//the difference between the values received by the lateral proximity sensors on both sides
+static int counter = 0;
+static bool stabilizer = 0;
 
-	void guidage(int a)
-	{
-		switch(a){
-		case AVANCE:
+void move_guidance(int a)
+{
+	switch(a){
+
+		case FORWARD:
 			left_motor_set_speed(MOTOR);
 			right_motor_set_speed(MOTOR);
 			break;
 
-		case GAUCHE:
+		case LEFT:
 			left_motor_set_speed(-MOTOR);
 			right_motor_set_speed(MOTOR);
 			break;
 
-		case DROITE:
+		case RIGHT:
 			left_motor_set_speed(MOTOR);
 			right_motor_set_speed(-MOTOR);
 			break;
@@ -41,162 +43,178 @@
 
 		default:
 			break;
-		}
 	}
+}
 
 void obstacle()
 {
-
-	if(compteur == 0){
-		set_led(LED1, 0);
+	if(counter == 0){
+		set_led(LED1, OFF);
 	}
 	else{
-		set_led(LED1, 1);
+		set_led(LED1, ON);
 	}
-	tab_prox[AVANT_DROITE] = get_prox(AVANT_DROITE);
-	tab_prox[DIAG_DROITE] = get_prox(DIAG_DROITE);
-	tab_prox[LAT_DROITE] = get_prox(LAT_DROITE);
-	tab_prox[LAT_GAUCHE] = get_prox(LAT_GAUCHE);
-	tab_prox[DIAG_GAUCHE] = get_prox(DIAG_GAUCHE);
-	tab_prox[AVANT_GAUCHE] = get_prox(AVANT_GAUCHE);
 
-	guidage(AVANCE);
+	//We start by collecting the values detected by the proximity sensors
+	tab_prox[FRONT_RIGHT] = get_prox(FRONT_RIGHT);
+	tab_prox[DIAG_RIGHT] = get_prox(DIAG_RIGHT);
+	tab_prox[LAT_RIGHT] = get_prox(LAT_RIGHT);
+	tab_prox[LAT_LEFT]	= get_prox(LAT_LEFT);
+	tab_prox[DIAG_LEFT] = get_prox(DIAG_LEFT);
+	tab_prox[FRONT_LEFT] = get_prox(FRONT_LEFT);
+
+	move_guidance(FORWARD);
+
+	/*	Testing the different scenarios of the displacement of the robot inside the maze  */
 
 	//Open on the left and an obstacle in the front
-	if ((tab_prox[AVANT_DROITE] > MUR) & (tab_prox[AVANT_GAUCHE] > MUR) & (tab_prox[LAT_GAUCHE] < VIDE)){
-		reglage_angle_gauche(QUART_TOUR_G);
+	if ((tab_prox[FRONT_RIGHT] > WALL) & (tab_prox[FRONT_LEFT] > WALL) & (tab_prox[LAT_LEFT] < VIDE)){
+		reglage_left_angle(QUART_TURN_LEFT);
 
-		reglage_distance(DIST_MUR_10CM);
-		tab_prox[LAT_GAUCHE] = get_prox(LAT_GAUCHE);
-		if((tab_prox[LAT_GAUCHE] > MUR_STAB_LAT) & (tab_prox[DIAG_GAUCHE] > MUR_STAB_DIAG)){
-			stab = NOT_OKAY;
-			while(stab != OKAY){
-				stabilisateur();
+		reglage_distance(DIST_2B_BTW_2WALLS_OBST);
+		tab_prox[LAT_LEFT] = get_prox(LAT_LEFT);
+
+		if((tab_prox[LAT_LEFT] > WALL_STAB_LAT) & (tab_prox[DIAG_LEFT] > WALL_STAB_DIAG)){
+			stabilizer= NOT_OKAY;
+
+			while(stabilizer!= OKAY){
+				stabilize_robot();
 			}
 		}
 	}
-	//Open on the right and an obstacle in the front
-	else if((tab_prox[AVANT_DROITE] > MUR) & (tab_prox[AVANT_GAUCHE] > MUR) & (tab_prox[LAT_DROITE] < VIDE)){
-		reglage_angle_droite(QUART_TOUR_D);
 
-		reglage_distance(DIST_MUR_10CM);
-		tab_prox[LAT_DROITE] = get_prox(LAT_DROITE);
-		if((tab_prox[LAT_DROITE] > MUR_STAB_LAT) & (tab_prox[DIAG_DROITE] > MUR_STAB_DIAG)){
-			stab = NOT_OKAY;
-			while(stab != OKAY){
-				stabilisateur();
+	//Open on the right and an obstacle in the front
+	else if((tab_prox[FRONT_RIGHT] > WALL) & (tab_prox[FRONT_LEFT] > WALL) & (tab_prox[LAT_RIGHT] < VIDE)){
+		reglage_right_angle(QUART_TURN_RIGHT);
+
+		reglage_distance(DIST_2B_BTW_2WALLS_OBST);
+		tab_prox[LAT_RIGHT] = get_prox(LAT_RIGHT);
+
+		if((tab_prox[LAT_RIGHT] > WALL_STAB_LAT) & (tab_prox[DIAG_RIGHT] > WALL_STAB_DIAG)){
+			stabilizer= NOT_OKAY;
+
+			while(stabilizer!= OKAY){
+				stabilize_robot();
 			}
-			if(compteur > 0){
-				reglage_angle_droite(CINQ_DEG);
+			if(counter > 0){
+				reglage_right_angle(FIVE_DEG);
 			}
 		}
 	}
 
 	//Open on the left without an obstacle in the front
-	else if((tab_prox[LAT_GAUCHE] < VIDE) & (tab_prox[AVANT_GAUCHE] < VIDE) & (tab_prox[LAT_DROITE] > (MUR_OMBRE))){
-		reglage_distance(DIST_OUVERTURE_4CM);
-		if(tab_prox[AVANT_GAUCHE] < VIDE){
+	else if((tab_prox[LAT_LEFT] < VIDE) & (tab_prox[FRONT_LEFT] < VIDE) & (tab_prox[LAT_RIGHT] > (WALL_OMBRE))){
+		reglage_distance(CENTER_BEFORE_OPNG);
 
+		if(tab_prox[FRONT_LEFT] < VIDE){
 
-			if(compteur == 0){
-				reglage_angle_gauche(QUART_TOUR_G);
-				reglage_distance(DIST_OUVERTURE_8CM);
-				stab = NOT_OKAY;
-				while(stab != OKAY){
-					stabilisateur();
+			if(counter == 0){
+				reglage_left_angle(QUART_TURN_LEFT);
+				reglage_distance(DIST_2B_BTW_2WALLS_OPNG);
+				stabilizer= NOT_OKAY;
+
+				while(stabilizer!= OKAY){
+					stabilize_robot();
 				}
 			}
 			else{
-				compteur--;
-				reglage_distance(DIST_CDS_14CM);
-				stab = NOT_OKAY;
-				while(stab != OKAY){
-					stabilisateur();
+				counter--;
+				reglage_distance(DIST_PASS_OPNG);
+				stabilizer= NOT_OKAY;
+
+				while(stabilizer!= OKAY){
+					stabilize_robot();
 				}
 			}
 		}
 	}
+
 	//Open on the right without an obstacle in the front
-	else if((tab_prox[LAT_DROITE] < VIDE) & (tab_prox[AVANT_DROITE] < VIDE) & (tab_prox[LAT_GAUCHE] > (MUR_OMBRE))){
-		reglage_distance(DIST_OUVERTURE_4CM);
-		if(tab_prox[AVANT_DROITE] < VIDE){
-			if(compteur == 0){
-				reglage_angle_droite(QUART_TOUR_G);
-				reglage_distance(DIST_OUVERTURE_8CM);
-				stab = NOT_OKAY;
-				while(stab != OKAY){
-					stabilisateur();
+	else if((tab_prox[LAT_RIGHT] < VIDE) & (tab_prox[FRONT_RIGHT] < VIDE) & (tab_prox[LAT_LEFT] > (WALL_OMBRE))){
+		reglage_distance(CENTER_BEFORE_OPNG);
+
+		if(tab_prox[FRONT_RIGHT] < VIDE){
+
+			if(counter == 0){
+				reglage_right_angle(QUART_TURN_LEFT);
+				reglage_distance(DIST_2B_BTW_2WALLS_OPNG);
+				stabilizer= NOT_OKAY;
+
+				while(stabilizer!= OKAY){
+					stabilize_robot();
 				}
 			}
 			else{
-				compteur--;
-				reglage_distance(DIST_CDS_14CM);
-				stab = NOT_OKAY;
-				while(stab != OKAY){
-					stabilisateur();
+				counter--;
+				reglage_distance(DIST_PASS_OPNG);
+				stabilizer= NOT_OKAY;
+
+				while(stabilizer!= OKAY){
+					stabilize_robot();
 				}
 			}
 		}
 	}
-	// cul de sac
-	else if((tab_prox[AVANT_DROITE] > MUR_CDS) & (tab_prox[AVANT_GAUCHE] > MUR_CDS) & (tab_prox[LAT_GAUCHE] > MUR_CDS) & (tab_prox[LAT_DROITE] > MUR_CDS)){
-		reglage_angle_gauche(DEMI_TOUR);
-		compteur++;
-		stab = NOT_OKAY;
-		while(stab != OKAY){
-			stabilisateur();
+
+	//Cul-de-sac
+	else if((tab_prox[FRONT_RIGHT] > WALL_CDS) & (tab_prox[FRONT_LEFT] > WALL_CDS) & (tab_prox[LAT_LEFT] > WALL_CDS) & (tab_prox[LAT_RIGHT] > WALL_CDS)){
+		reglage_left_angle(HALF_TURN);
+		counter++;
+		stabilizer = NOT_OKAY;
+
+		while(stabilizer!= OKAY){
+			stabilize_robot();
 		}
 	}
+
 	//Exit of the maze: proximity sensors detect nothing
-	else if((tab_prox[AVANT_DROITE] < VIDE) & (tab_prox[AVANT_GAUCHE] < VIDE) & (tab_prox[DIAG_DROITE] < VIDE) & (tab_prox[DIAG_GAUCHE] < VIDE)){
-		reglage_distance(DIST_OUVERTURE_4CM);
-		if((tab_prox[LAT_GAUCHE] > MUR_STAB_LAT) | (tab_prox[LAT_DROITE] > MUR_STAB_LAT)){
-			finish();
+	else if((tab_prox[FRONT_RIGHT] < VIDE) & (tab_prox[FRONT_LEFT] < VIDE) & (tab_prox[DIAG_RIGHT] < VIDE) & (tab_prox[DIAG_LEFT] < VIDE)){
+		reglage_distance(CENTER_BEFORE_OPNG);
+
+		if((tab_prox[LAT_LEFT] > WALL_STAB_LAT) | (tab_prox[LAT_RIGHT] > WALL_STAB_LAT)){
+			end();
 		}
 	}
 	else{
-		guidage(AVANCE);
+		move_guidance(FORWARD);
 	}
-	//proximity sensors frequency is about   Hz (10ms)
-	chThdSleepMilliseconds(10);
 
+	//proximity sensors frequency is about 100 Hz (10ms)
+	chThdSleepMilliseconds(TEN_MILLISECONDS);
 }
 
 //Rotation of the robot to the left
-void reglage_angle_gauche(int n)
+void reglage_left_angle(int n)
 {
-
 	systime_t start = chVTGetSystemTime();
 	systime_t end = start + MS2ST(n);
 
 	while (chVTIsSystemTimeWithin(start, end)){
-		guidage(GAUCHE);
-
+		move_guidance(LEFT);
 	}
 	start = chVTGetSystemTime();
 	end = start + MS2ST(ROT_WAIT);
 
 	while (chVTIsSystemTimeWithin(start, end)){
-		guidage(STOP);
+		move_guidance(STOP);
 	}
 }
 
 //Rotation of the robot to the right
-void reglage_angle_droite(int n)
+void reglage_right_angle(int n)
 {
-
 	systime_t start = chVTGetSystemTime();
 	systime_t end = start + MS2ST(n);
 
 	while (chVTIsSystemTimeWithin(start, end)){
-		guidage(DROITE);
-
+		move_guidance(RIGHT);
 	}
+
 	start = chVTGetSystemTime();
 	end = start + MS2ST(ROT_WAIT);
 
 	while (chVTIsSystemTimeWithin(start, end)){
-		guidage(STOP);
+		move_guidance(STOP);
 	}
 }
 
@@ -207,96 +225,86 @@ void reglage_distance(int n)
 	systime_t end = start + MS2ST(n);
 
 	while (chVTIsSystemTimeWithin(start, end)){
-		guidage(AVANCE);
-
+		move_guidance(FORWARD);
 	}
 }
 
-void stabilisateur()
+//The robot will stabilize at the center of its path and will be positioned to move straight forward
+void stabilize_robot()
 {
-	tab_prox[DIAG_DROITE] = get_prox(DIAG_DROITE);
-	tab_prox[LAT_DROITE] = get_prox(LAT_DROITE);
-	tab_prox[LAT_GAUCHE] = get_prox(LAT_GAUCHE);
-	tab_prox[DIAG_GAUCHE] = get_prox(DIAG_GAUCHE);
+	tab_prox[DIAG_RIGHT] = get_prox(DIAG_RIGHT);
+	tab_prox[LAT_RIGHT] = get_prox(LAT_RIGHT);
+	tab_prox[LAT_LEFT] = get_prox(LAT_LEFT);
+	tab_prox[DIAG_LEFT] = get_prox(DIAG_LEFT);
 
-	delta1_6 = tab_prox[DIAG_DROITE]-tab_prox[DIAG_GAUCHE];
-	delta2_5 = tab_prox[LAT_DROITE]-tab_prox[LAT_GAUCHE];
+	delta_diag = tab_prox[DIAG_RIGHT] - tab_prox[DIAG_LEFT];
+	delta_lat = tab_prox[LAT_RIGHT] - tab_prox[LAT_LEFT];
 
 
 	//Adjusment of the angle of the robot when it is turned more to the right
-	if(delta1_6 > DELTA1_6){
-		while(delta1_6 > DELTA1_6){
-			if(delta1_6 > DELTA1_6_GRAND){
-				guidage(GAUCHE);
+	if(delta_diag > DELTA_DIAG){
+		while(delta_diag > DELTA_DIAG){
+			if(delta_diag > DELTA_DIAG_GRAND){
+				move_guidance(LEFT);
 			}
 			else{
-				reglage_angle_gauche(DEMI_DEG);
+				reglage_left_angle(HALF_DEG);
 			}
-			tab_prox[DIAG_DROITE] = get_prox(DIAG_DROITE);
-			tab_prox[DIAG_GAUCHE] = get_prox(DIAG_GAUCHE);
-			delta1_6 = tab_prox[DIAG_DROITE]-tab_prox[DIAG_GAUCHE];
+			tab_prox[DIAG_RIGHT] = get_prox(DIAG_RIGHT);
+			tab_prox[DIAG_LEFT] = get_prox(DIAG_LEFT);
+			delta_diag = tab_prox[DIAG_RIGHT] - tab_prox[DIAG_LEFT];
 		}
 	}
 
 	//Adjusment of the angle of the robot when it is turned more to the left
-	else if (delta1_6 < -DELTA1_6){
-		while(delta1_6 < -DELTA1_6){
-			if(delta1_6 < -DELTA1_6_GRAND){
-				guidage(DROITE);
+	else if (delta_diag < -DELTA_DIAG){
+
+		while(delta_diag < -DELTA_DIAG){
+
+			if(delta_diag < -DELTA_DIAG_GRAND){
+				move_guidance(RIGHT);
 			}
 			else{
-				reglage_angle_droite(DEMI_DEG);
+				reglage_right_angle(HALF_DEG);
 			}
-			tab_prox[DIAG_DROITE] = get_prox(DIAG_DROITE);
-			tab_prox[DIAG_GAUCHE] = get_prox(DIAG_GAUCHE);
-			delta1_6 = tab_prox[DIAG_DROITE]-tab_prox[DIAG_GAUCHE];
-			}
+			tab_prox[DIAG_RIGHT] = get_prox(DIAG_RIGHT);
+			tab_prox[DIAG_LEFT] = get_prox(DIAG_LEFT);
+			delta_diag = tab_prox[DIAG_RIGHT]-tab_prox[DIAG_LEFT];
+		}
 	}
 
 	//Adjusment of the robot when it is not centered on its path: closer to the left wall
-	else if ((delta2_5 < -DELTA2_5)){
-		reglage_angle_droite(ROT_STAB);
+	else if ((delta_lat < -DELTA_LAT)){
+		reglage_right_angle(ROT_STAB);
 
 		reglage_distance(DIST_STAB);
 
-		reglage_angle_gauche(ROT_STAB);
+		reglage_left_angle(ROT_STAB);
 	}
 
 	//Adjusment of the robot when it is not centered on its path: closer to the right wall
-	else if ((delta2_5 > DELTA2_5)){
+	else if ((delta_lat > DELTA_LAT)){
 
-		reglage_angle_gauche(ROT_STAB);
+		reglage_left_angle(ROT_STAB);
 
 		reglage_distance(DIST_STAB);
 
-		reglage_angle_droite(ROT_STAB);
+		reglage_right_angle(ROT_STAB);
 	}
 	else {
-		stab = OKAY;
+		stabilizer= OKAY;
 	}
 	//proximity sensors frequency is about 100 Hz (10ms)
-	chThdSleepMilliseconds(10);
+	chThdSleepMilliseconds(TEN_MILLISECONDS);
 }
 
-
-void finish()
+//This function is activated once the robot reaches the end of the maze
+void end()
 {
-	reglage_distance(DIST_END_5CM);
+	reglage_distance(DIST_AT_END);
+
 	while(1){
-		guidage(DROITE);
-		set_body_led(OKAY);
+		move_guidance(RIGHT);
+		set_body_led(ON);
 	}
 }
-void test_stab()
-{
-	tab_prox[AVANT_DROITE] = get_prox(AVANT_DROITE);
-	tab_prox[DIAG_DROITE] = get_prox(DIAG_DROITE);
-	tab_prox[LAT_DROITE] = get_prox(LAT_DROITE);
-	tab_prox[LAT_GAUCHE] = get_prox(LAT_GAUCHE);
-	tab_prox[DIAG_GAUCHE] = get_prox(DIAG_GAUCHE);
-	tab_prox[AVANT_GAUCHE] = get_prox(AVANT_GAUCHE);
-	chprintf((BaseSequentialStream *)&SD3, "%d %d %d %d %d %d\r\n", tab_prox[DIAG_DROITE], tab_prox[DIAG_GAUCHE], tab_prox[LAT_DROITE], tab_prox[LAT_GAUCHE], tab_prox[AVANT_GAUCHE], tab_prox[AVANT_DROITE]);
-}
-
-
-

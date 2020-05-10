@@ -1,21 +1,18 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-
+//#include <string.h>
 #include "ch.h"
 #include "hal.h"
 #include "memory_protection.h"
 #include <usbcfg.h>
 #include <main.h>
-#include <chprintf.h>
 #include <motors.h>
-#include <audio/microphone.h>
-#include <leds.h>
-
+//#include <audio/microphone.h>
+//#include <leds.h>
 #include <audio_processing.h>
-#include <fft.h>
-#include <communications.h>
-#include <arm_math.h>
+//#include <fft.h>
+//#include <communications.h>
+//#include <arm_math.h>
 #include <detector.h>
 #include <sensors/proximity.h>
 
@@ -41,24 +38,18 @@ int main(void)
     halInit();
     chSysInit();
     mpu_init();
-
-    //starts the serial communication
     serial_start();
-    //starts the USB communication
     usb_start();
-    //inits the motors
     motors_init();
-
     proximity_start();
 
     messagebus_init(&bus, &bus_lock, &bus_condvar);
 
     calibrate_ir();
-
     process_audio_start();
 
     while(1){
-    	chThdSleepMilliseconds(1000);
+    	chThdSleepMilliseconds(ONE_SEC);
     }
 
 }
